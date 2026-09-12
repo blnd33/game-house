@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using GamingHouse.Agent.Admin;
 using GamingHouse.Agent.Catalog;
 using GamingHouse.Agent.Detection;
 using GamingHouse.Agent.Ipc;
@@ -53,12 +54,14 @@ public sealed class AgentService
     private readonly RunTracker runs;
     private readonly SessionCoordinator? sessions;
     private readonly Func<string, BackendPermit?> authorize;
+    private readonly AdminAuthority admin;
     private PipeConnection? client;
 
     public AgentService(AgentOptions options, IProcessSource processes, Func<DateTimeOffset>? clock = null,
         Func<SteamLibrary>? steam = null, Func<bool?>? steamSignedIn = null, TimeSpan? exitGrace = null,
-        SessionCoordinator? sessions = null, Func<string, BackendPermit?>? authorize = null)
+        SessionCoordinator? sessions = null, Func<string, BackendPermit?>? authorize = null, AdminAuthority? admin = null)
     {
+        this.admin = admin ?? new AdminAuthority(options.ConfigDirectory, clock);
         this.options = options;
         this.sessions = sessions;
         this.authorize = authorize ?? (sessions is not null ? sessions.RequestLaunch : _ => null);
@@ -126,6 +129,72 @@ public sealed class AgentService
             case StateGetMessage state:
                 return sessions is null ? [new ErrorMessage(state.Id, "not_enrolled", "Station is not enrolled. Ask the operator to complete setup.")]
                     : [new StateMessage(state.Id, sessions.DisplayState())];
+
+            case AdminStatusMessage status:
+                return [new AdminStateMessage(status.Id, admin.PasswordSet, admin.LockedOutSeconds)];
+
+            case AdminUnlockMessage unlock:
+            {
+                if (!admin.PasswordSet)
+                {
+                    return [new ErrorMessage(unlock.Id, "admin_not_set",
+                        "No staff password is set on this PC. An administrator sets one with: GamingHouse.Agent.exe admin set-password")];
+                }
+                var token = admin.Unlock(unlock.Password); // the password itself is never logged or echoed
+                if (token is not null) return [new AdminSessionMessage(unlock.Id, token, AdminAuthority.IdleSeconds)];
+                return [admin.LockedOutSeconds > 0
+                    ? new ErrorMessage(unlock.Id, "admin_locked_out", $"Too many wrong tries. Try again in {admin.LockedOutSeconds} seconds.")
+                    : new ErrorMessage(unlock.Id, "admin_password", "Wrong staff password.")];
+            }
+
+            case AdminLockMessage lockPanel:
+                admin.Lock(lockPanel.Token);
+                return [new AdminStateMessage(lockPanel.Id, admin.PasswordSet, admin.LockedOutSeconds)];
+
+            case AdminSetPasswordMessage password:
+                if (!admin.Holds(password.Token)) return AdminLocked(password.Id);
+                try { admin.SetPassword(password.NextPassword); }
+                catch (ArgumentException error) { return [new ErrorMessage(password.Id, "invalid_request", error.Message)]; }
+                return [new AdminStateMessage(password.Id, true, 0)];
+
+            case AdminGamesMessage list:
+                return admin.Holds(list.Token) ? [AdminGames(list.Id)] : AdminLocked(list.Id);
+
+            case AdminSteamMessage steamRequest:
+            {
+                if (!admin.Holds(steamRequest.Token)) return AdminLocked(steamRequest.Id);
+                var library = steam();
+                var apps = library.InstalledApps().OrderBy(app => app.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(app => new AdminSteamApp(app.AppId, app.Name, app.FullyInstalled, app.UpdateRequired,
+                        SteamLibrary.CandidateExecutables(app.InstallPath))).ToList();
+                return [new AdminSteamReply(steamRequest.Id, library.Root, apps)];
+            }
+
+            case AdminAddMessage add:
+            {
+                if (!admin.Holds(add.Token)) return AdminLocked(add.Id);
+                CatalogEntry entry;
+                try { entry = BuildEntry(add); }
+                catch (ArgumentException error) { return [new ErrorMessage(add.Id, "invalid_request", error.Message)]; }
+                return AdminOutcome(add.Id, CatalogEditor.SaveEntry(store, entry, ValidationContextNow()));
+            }
+
+            case AdminUpdateMessage change:
+            {
+                if (!admin.Holds(change.Token)) return AdminLocked(change.Id);
+                var patch = new GamePatch(change.Title, change.Category, change.Controller, change.Multiplayer, change.Enabled);
+                return AdminOutcome(change.Id, CatalogEditor.Update(store, change.GameId, patch, ValidationContextNow()));
+            }
+
+            case AdminRemoveMessage remove:
+                return admin.Holds(remove.Token) ? AdminOutcome(remove.Id, CatalogEditor.Remove(store, remove.GameId)) : AdminLocked(remove.Id);
+
+            case AdminReorderMessage reorder:
+                return admin.Holds(reorder.Token) ? AdminOutcome(reorder.Id, CatalogEditor.Reorder(store, reorder.GameIds)) : AdminLocked(reorder.Id);
+
+            case AdminRenameCategoryMessage rename:
+                return admin.Holds(rename.Token)
+                    ? AdminOutcome(rename.Id, CatalogEditor.RenameCategory(store, rename.From, rename.To)) : AdminLocked(rename.Id);
             case HelloMessage hello:
                 if (hello.Protocol != ProtocolVersion) return Reject(context, null, "protocol", $"Protocol {ProtocolVersion} is required.");
                 context.Greeted = true;
@@ -136,7 +205,7 @@ public sealed class AgentService
             {
                 var games = LoadCatalog(out var version, out var error);
                 if (error is not null) return [new ErrorMessage(get.Id, "catalog_invalid", error)];
-                var views = games.Where(g => g.Playable).Select(g => g.Entry)
+                var views = CatalogEditor.InDisplayOrder(games.Where(g => g.Playable)).Select(g => g.Entry)
                     .Select(e => new LibraryGameView(e.GameId, e.Title, e.ArtworkAsset, e.Category, e.Controller, e.Multiplayer)).ToList();
                 return [new CatalogMessage(get.Id, version, views)];
             }
@@ -271,6 +340,75 @@ public sealed class AgentService
             error = failure.Message;
             AgentHost.Log($"catalog error: {failure.Message}");
             return [];
+        }
+    }
+
+    private static IReadOnlyList<AgentMessage> AdminLocked(string id) =>
+        [new ErrorMessage(id, "admin_locked", "The admin panel is locked. Enter the staff password again.")];
+
+    private ValidationContext ValidationContextNow()
+    {
+        var development = options.Development;
+        try { development = development && store.Load().Development?.AllowUserWritablePaths == true; }
+        catch (CatalogException) { development = false; }
+        return new ValidationContext(steam(), development);
+    }
+
+    /// <summary>After every change, staff get the whole list back, so the panel always shows the saved truth.</summary>
+    private AgentMessage AdminGames(string id)
+    {
+        var games = LoadCatalog(out var version, out var error);
+        if (error is not null) return new ErrorMessage(id, "catalog_invalid", error);
+        var views = CatalogEditor.InDisplayOrder(games).Select(game => new AdminGameView(
+            game.Entry.GameId, game.Entry.Title, game.Entry.ArtworkAsset, game.Entry.Category, game.Entry.Controller,
+            game.Entry.Multiplayer, game.Entry.Enabled, game.Entry.SortOrder,
+            game.Entry.Launch is SteamLaunch ? "steam" : "executable",
+            JsonNamingPolicy.SnakeCaseLower.ConvertName(game.Status.ToString()),
+            game.Problems, game.Missing, game.Warnings)).ToList();
+        return new AdminGamesReply(id, version, views);
+    }
+
+    private IReadOnlyList<AgentMessage> AdminOutcome(string id, EditResult result)
+    {
+        if (result.Error is not null) return [new ErrorMessage(id, "rejected", result.Error)];
+        if (!result.Saved && result.Validation is { } validation)
+            return [new AdminRejectedMessage(id, validation.Problems, validation.Missing, validation.Warnings)];
+        return [AdminGames(id)];
+    }
+
+    /// <summary>
+    /// Builds a catalog entry from what staff chose in the panel. Launch arguments
+    /// are deliberately not accepted here: the panel adds installed games, it never
+    /// composes a command line.
+    /// </summary>
+    private CatalogEntry BuildEntry(AdminAddMessage add)
+    {
+        if (!Patterns.GameId().IsMatch(add.GameId))
+            throw new ArgumentException("The game ID must be lowercase letters, digits, dots, dashes or underscores.");
+        var names = add.ExecutableNames.Where(name => !string.IsNullOrWhiteSpace(name)).ToList();
+        if (names.Count == 0) throw new ArgumentException("Choose the game's process file, for example Game.exe.");
+        var timeout = add.TimeoutSeconds is >= CatalogValidator.MinTimeoutSeconds and <= CatalogValidator.MaxTimeoutSeconds
+            ? add.TimeoutSeconds : 120;
+        switch (add.Kind)
+        {
+            case "steam":
+            {
+                var appId = add.AppId ?? throw new ArgumentException("A Steam AppID is required.");
+                if (!Patterns.SteamAppId().IsMatch(appId)) throw new ArgumentException("The Steam AppID must be digits only.");
+                var app = steam().Find(appId) ?? throw new ArgumentException($"Steam app {appId} is not installed on this PC.");
+                var title = string.IsNullOrWhiteSpace(add.Title) ? app.Name : add.Title;
+                return new CatalogEntry(add.GameId, title, null, add.Category, add.Controller, add.Multiplayer, true,
+                    new SteamLaunch(appId), new DetectionProfile(names, app.InstallPath, timeout, HandoffStrategy.SteamProcess));
+            }
+            case "executable":
+            {
+                var path = add.ExecutablePath ?? throw new ArgumentException("Choose the game's program file.");
+                var folder = Path.GetDirectoryName(path) ?? throw new ArgumentException("Choose the game's program file.");
+                return new CatalogEntry(add.GameId, add.Title, null, add.Category, add.Controller, add.Multiplayer, true,
+                    new ExecutableLaunch(path, [], folder), new DetectionProfile(names, folder, timeout, HandoffStrategy.DirectProcess));
+            }
+            default:
+                throw new ArgumentException("Unsupported game type.");
         }
     }
 

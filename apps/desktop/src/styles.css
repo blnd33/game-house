@@ -377,3 +377,69 @@ svg { flex: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+/* Admin panel (staff password) */
+.admin-entry {
+  flex: none; margin-top: 10px; padding: 9px; border-radius: 10px; border: 1px solid var(--line);
+  color: var(--text-3); font-size: 13px; font-weight: 600; transition: color 0.12s, border-color 0.12s;
+}
+.admin-entry:hover { color: var(--text-2); border-color: var(--line-strong); }
+.dialog.admin { width: min(880px, 100%); max-height: min(880px, 92vh); display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+.admin-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.admin-head h2 { margin: 4px 0 0; font: 600 26px var(--font-display); }
+.admin-head-actions { display: flex; align-items: center; gap: 10px; }
+.admin-head-actions .dev-close { position: static; }
+.admin-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-unlock { display: grid; justify-items: center; gap: 10px; padding: 26px 10px 14px; text-align: center; }
+.admin-unlock svg { width: 30px; height: 30px; color: var(--warn); }
+.admin-unlock h3 { margin: 0; font: 600 22px var(--font-display); }
+.admin-unlock p { margin: 0; color: var(--text-2); max-width: 46ch; line-height: 1.5; }
+.admin-unlock code { color: var(--text); font-size: 13px; }
+.admin-unlock form { display: flex; gap: 10px; margin-top: 6px; }
+.admin-unlock input { width: 260px; }
+.admin input[type='text'], .admin input[type='password'], .admin input:not([type]) {
+  height: 40px; padding: 0 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line-strong);
+  color: var(--text); font: inherit; user-select: text;
+}
+.admin input:focus-visible { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.2); }
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px;
+  border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-primary:disabled { background: #2a2a2a; color: var(--text-3); }
+.btn-primary svg { width: 17px; height: 17px; }
+.admin-error { margin: 0; padding: 10px 14px; border-radius: 10px; background: rgba(255, 90, 95, 0.1); border: 1px solid rgba(255, 90, 95, 0.4); color: #ffc2c4; font-size: 14px; }
+.admin-error ul { margin: 6px 0 0; padding-left: 18px; }
+.admin-list { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.admin-empty { padding: 30px; text-align: center; color: var(--text-2); border: 1px dashed var(--line-strong); border-radius: 12px; }
+.admin-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); }
+.admin-row.hidden-game { opacity: 0.55; }
+.admin-order { display: grid; gap: 4px; }
+.admin-order button, .admin-actions button {
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line-strong); color: var(--text-2);
+}
+.admin-order button:hover:not(:disabled), .admin-actions button:hover { color: var(--text); border-color: #4a4a4a; }
+.admin-order button:disabled { color: #4a4a4a; }
+.admin-order svg, .admin-actions svg { width: 16px; height: 16px; }
+.admin-actions { display: flex; gap: 6px; margin-left: auto; }
+.admin-actions .danger:hover { color: var(--danger); border-color: var(--danger); }
+.admin-game { flex: 1; min-width: 0; }
+.admin-title { font-weight: 600; font-size: 15px; }
+.admin-meta { margin-top: 3px; color: var(--text-3); font-size: 13px; }
+.admin-meta .status { font-weight: 600; }
+.admin-meta .status.ready { color: var(--ok); }
+.admin-meta .status.disabled { color: var(--text-3); }
+.admin-meta .status.not_installed, .admin-meta .status.invalid { color: var(--warn); }
+.admin-note { margin-top: 4px; color: var(--warn); font-size: 12px; }
+.admin-path { margin: 8px 0 0; color: var(--text-2); font-size: 13px; word-break: break-all; }
+.admin-edit { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; }
+.admin-edit label { display: grid; gap: 5px; font-size: 13px; color: var(--text-2); }
+.admin-edit .admin-check { display: flex; align-items: center; gap: 8px; height: 40px; }
+.admin-edit input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--accent); }
+.admin-edit-actions { display: flex; gap: 10px; }
+.admin-add { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 12px; align-content: start; }
+.admin-steam { display: grid; gap: 8px; max-height: 230px; overflow-y: auto; }
+.admin-steam-app { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-strong); text-align: left; }
+.admin-steam-app:hover { border-color: var(--accent); }
+.admin-steam-app span { color: var(--text-3); font-size: 12px; }

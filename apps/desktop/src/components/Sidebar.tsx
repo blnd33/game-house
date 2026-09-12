@@ -14,10 +14,12 @@ interface Props {
   favoriteCount: number;
   onView(view: LibraryView): void;
   onCategory(category: string | null): void;
+  /** Opens the staff-only panel; omitted when no agent is reachable. */
+  onAdmin?: (() => void) | undefined;
   children: ReactNode;
 }
 
-export function Sidebar({ view, category, categories, favoriteCount, onView, onCategory, children }: Props) {
+export function Sidebar({ view, category, categories, favoriteCount, onView, onCategory, onAdmin, children }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand"><img src="./brand/gaming-house-logo.png" alt="Gaming House" draggable={false} /></div>
@@ -46,6 +48,7 @@ export function Sidebar({ view, category, categories, favoriteCount, onView, onC
         </div>
       </nav>
       {children}
+      {onAdmin && <button className="admin-entry" onClick={onAdmin}>Admin</button>}
     </aside>
   );
 }

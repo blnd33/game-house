@@ -103,3 +103,25 @@ require reconciliation; the simulator holds uncertain sessions for staff.
 
 No service installation, Windows disconnection, venue enrollment, or partner API
 change has been performed by building this package.
+
+## Staff admin panel
+
+The player screen has an **Admin** button in the sidebar. It opens a staff-only
+panel for this PC's game list: add, remove, hide, rename, recategorize and
+reorder games, and choose which one is featured. It cannot touch prices,
+sessions or restrictions, and it can never run a command: it only adds games
+that pass the same checks as the command line.
+
+Set the password on each PC after installing (an administrator, once):
+
+```powershell
+& 'C:\Program Files\GamingHouse\agent\GamingHouse.Agent.exe' admin set-password --config-dir 'C:\ProgramData\GamingHouse'
+```
+
+The password is typed, never passed on the command line, and only a PBKDF2 hash
+is stored in `admin.json`. Staff can change it in the panel. If staff forget it,
+an administrator runs the same command again; there is no way to read it back.
+Wrong guesses are rate-limited and lock out for a minute, doubling up to fifteen.
+An open panel closes itself after 15 minutes idle and when a customer session
+starts. Adding a game still requires the game folder to be one customers cannot
+change, so a leaked password cannot be used to swap a game for something else.

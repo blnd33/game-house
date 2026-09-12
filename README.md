@@ -34,8 +34,13 @@ npm run start:sample     # isolated UI demo with a fake cashier; cannot launch r
 npm run test:desktop     # 18 UI checks, screenshots in artifacts/ui/
 ```
 
-`docs/operator-setup.md` covers enrollment, the cashier commands and recovery.
-`docs/game-setup.md` covers adding and testing real games, one at a time.
+`docs/operator-setup.md` covers enrollment, the staff admin panel, the cashier
+commands and recovery. `docs/game-setup.md` covers adding and testing real games,
+one at a time.
+
+Staff manage this PC's games from the **Admin** button in the app, behind a staff
+password (`GamingHouse.Agent.exe admin set-password`). The panel changes the game
+list only: never prices, sessions, restrictions or anything that runs a command.
 
 ## Files to read
 

@@ -63,3 +63,19 @@ The earlier `--native-test` file is a Phase 3 standalone harness and is not curr
 acceptance evidence: the system now requires backend authorization. Use the above
 authorized path for real games and `npm run test:system` for synthetic lifecycle
 coverage. Synthetic observations never prove Steam, anti-cheat or Windows locking.
+
+## Adding games from the app instead of the command line
+
+Staff can do the same work from the **Admin** button in the player screen, using
+the staff password (see `docs/operator-setup.md`):
+
+- **From Steam**: the panel lists Steam games installed on that PC with their
+  AppIDs and likely program files. Pick one, confirm the process file name,
+  choose a category, add.
+- **Program file**: browse to the game's `.exe`. The panel suggests the process
+  name from the file.
+
+The agent validates every addition exactly as the command line does, so a game
+in a customer-writable folder, a script, or a game that is not really installed
+is refused with the reason shown. Launch arguments are deliberately not editable
+in the panel; use `setup add-exe --arg` when a game needs them.

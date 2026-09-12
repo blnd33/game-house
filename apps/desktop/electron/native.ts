@@ -1,9 +1,11 @@
-import { ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
+import { dialog, ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import { spawn } from 'node:child_process';
 import { AgentClient, type AgentMessage } from './agent-client.js';
 import { parseLaunchSpec, steamUri, type LaunchSpec } from './launch-spec.js';
 
 const GAME_ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+const ADMIN_MESSAGES = new Set(['admin.status', 'admin.unlock', 'admin.lock', 'admin.set_password', 'admin.games',
+  'admin.steam', 'admin.add', 'admin.update', 'admin.remove', 'admin.reorder', 'admin.rename_category']);
 const FAILURE_REASONS = new Set(['timeout', 'not_installed', 'login_required', 'process_unreliable', 'start_failed', 'communication_lost']);
 
 export type LaunchResult =
@@ -143,6 +145,23 @@ export class NativeStation {
       const reply = await this.agent.request({ type: 'catalog.get' });
       if (reply.type !== 'catalog') throw new Error(String(reply.message ?? 'The station catalog is unavailable.'));
       return catalogGames(reply.games);
+    });
+    // Admin panel: staff-password-protected game list changes. The agent checks the
+    // password and validates every change; this only forwards known message types
+    // and never writes the password anywhere.
+    ipcMain.handle('native:admin', async (event, ...args: unknown[]) => {
+      if (!trusted(event) || args.length !== 1) throw new Error('IPC request rejected');
+      const message = args[0] as Record<string, unknown>;
+      if (typeof message?.type !== 'string' || !ADMIN_MESSAGES.has(message.type)) throw new Error('IPC request rejected');
+      return this.agent.request(message);
+    });
+    ipcMain.handle('native:pick-game', async (event, ...args: unknown[]) => {
+      if (!trusted(event) || args.length !== 0) throw new Error('IPC request rejected');
+      const chosen = await dialog.showOpenDialog(window, {
+        title: 'Choose the game program', buttonLabel: 'Choose',
+        filters: [{ name: 'Programs', extensions: ['exe'] }], properties: ['openFile'],
+      });
+      return chosen.canceled ? null : chosen.filePaths[0] ?? null;
     });
     ipcMain.handle('native:launch', async (event, ...args: unknown[]) => {
       if (!trusted(event) || args.length !== 1 || typeof args[0] !== 'string') throw new Error('IPC request rejected');

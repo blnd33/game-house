@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('gamingHouse', Object.freeze({
     catalog: () => ipcRenderer.invoke('native:catalog'),
     state: () => ipcRenderer.invoke('native:state'),
     launch: (gameId: string) => ipcRenderer.invoke('native:launch', String(gameId)),
+    admin: (message: unknown) => ipcRenderer.invoke('native:admin', message),
+    pickGameFile: () => ipcRenderer.invoke('native:pick-game'),
     onEvent: (listener: (event: unknown) => void) => {
       const handler = (_event: IpcRendererEvent, payload: unknown) => listener(payload);
       ipcRenderer.on('native:event', handler);

@@ -9,8 +9,10 @@ export function useStation(client: StationClient): { state: StationState | null;
   return view;
 }
 
-export function useCatalog(client: StationClient): readonly LibraryGame[] | null {
+/** The station's games. `reload` re-reads them after staff change the list in the admin panel. */
+export function useCatalog(client: StationClient): { games: readonly LibraryGame[] | null; reload(): void } {
   const [games, setGames] = useState<readonly LibraryGame[] | null>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
     const refresh = () => client.catalog().then(list => { if (active) setGames(list); }, () => { if (active) setGames([]); });
@@ -22,8 +24,8 @@ export function useCatalog(client: StationClient): readonly LibraryGame[] | null
       connected = next;
     });
     return () => { active = false; unsubscribe(); };
-  }, [client]);
-  return games;
+  }, [client, attempt]);
+  return { games, reload: () => setAttempt(count => count + 1) };
 }
 
 /**

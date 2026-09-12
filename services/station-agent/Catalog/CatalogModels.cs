@@ -12,7 +12,9 @@ public sealed record DevelopmentOptions(bool AllowUserWritablePaths);
 
 public sealed record CatalogEntry(
     string GameId, string Title, string? ArtworkAsset, string Category, bool Controller, bool Multiplayer, bool Enabled,
-    LaunchSpec Launch, DetectionProfile Detection);
+    LaunchSpec Launch, DetectionProfile Detection,
+    /// <summary>Display order chosen by staff in the admin panel; 0 means "not placed yet".</summary>
+    int SortOrder = 0);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(SteamLaunch), "steam")]

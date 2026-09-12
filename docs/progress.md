@@ -19,6 +19,37 @@ system first; add and test real games one by one at the end** (2026-09-11). Gate
 that need real games or venue hardware are marked unverified until then, with the
 exact tests to run recorded in `docs/game-setup.md`.
 
+## Staff admin panel (2026-09-12)
+
+Requested by the owner: staff open a password-protected panel inside the app and
+manage this PC's games; everything else stays out of reach.
+
+**What changed**
+
+| Deliverable | Location | Responsibility |
+| --- | --- | --- |
+| Staff password | `services/station-agent/Admin/AdminAuthority.cs`, `AdminCli.cs` | PBKDF2 hash only, rate-limited guesses with escalating lockout, in-memory unlock that expires after 15 minutes idle; `admin set-password` for install and reset |
+| Catalog editing | `services/station-agent/Catalog/CatalogEditor.cs` | One path for the command line and the panel: validate on this PC, save only what passes, keep display order |
+| Admin commands | `services/station-agent/Ipc/Protocol.cs`, `AgentService.cs` | Unlock/lock, list, Steam scan, add, update, remove, reorder, rename category, change password — each requires a live unlock |
+| Panel | `apps/desktop/src/components/AdminPanel.tsx`, `station/admin.ts` | Unlock screen, game list with reorder/hide/edit/remove, add from Steam or a picked `.exe`, category editing, password change |
+| Sample panel | `apps/desktop/src/dev/sample-admin.ts` | Shares the sample library, so demos behave like the real thing (password `padel-house`) |
+| Order in the catalog | `sort_order` on each entry | Staff order is what players see |
+
+**Deliberate limits:** the panel cannot change prices, grace time, sessions or
+restrictions, cannot run a command or script, cannot pass launch arguments, and
+cannot approve a game in a folder customers can modify. A leaked staff password
+can only disturb the game list.
+
+**Verified on this PC (2026-09-12):** `npm run verify` — 75 Node tests, 67 .NET
+tests (14 new: hashing, lockout, idle expiry, password change, locked commands,
+refusals, add/remove/hide/reorder/rename), both integration tests, and
+`npm run test:desktop` 21/21 UI checks including "the panel opens only with the
+staff password", "hiding a game removes it for players", and "staff can change
+the order players see". Screenshot: `artifacts/ui/11-admin-panel.png`.
+
+**Not verified:** the panel has never been used against real games or on a venue
+PC, and no staff password has been set outside tests.
+
 ## Phases 3–5 — Launching, session lifecycle, reliability and packaging
 
 Built in one stretch under the owner's sequencing decision. `docs/review-2026-09-11.md`

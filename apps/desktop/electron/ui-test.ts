@@ -275,6 +275,45 @@ export async function runUiTest(window: BrowserWindow, artifacts: URL): Promise<
     expect(!(await js<string>(`return gh.region('Your session')`)).includes('billable'), 'previous timers carried over');
   });
 
+  const typeInto = async (label: string, text: string) => {
+    await js(`const input = document.querySelector('[aria-label="${label}"]'); input.focus(); input.select();`);
+    await wc.insertText(text);
+    await js('await gh.sleep(60)');
+  };
+  const unlockAdmin = async () => {
+    await js(`gh.click('Admin'); await gh.waitFor(() => gh.text().includes('staff only'), 'unlock screen')`);
+    await typeInto('Staff password', 'padel-house');
+    await js(`gh.click('Unlock'); await gh.waitFor(() => gh.button('Games (12)') || gh.button('Games (11)'), 'game list')`);
+  };
+
+  await check('the admin panel opens only with the staff password', async () => {
+    await js(`gh.click('Admin'); await gh.waitFor(() => gh.text().includes('staff only'), 'unlock screen')`);
+    await typeInto('Staff password', 'not-the-password');
+    await js(`gh.click('Unlock'); await gh.waitFor(() => gh.text().includes('wrong staff password'), 'refusal')`);
+    expect(!(await js<string>('return gh.text()')).includes('add a game'), 'the panel opened without the password');
+    await typeInto('Staff password', 'padel-house');
+    await js(`gh.click('Unlock'); await gh.waitFor(() => gh.button('Games (12)'), 'game list')`);
+  });
+  await shot('11-admin-panel');
+
+  await check('hiding a game removes it for players and showing it brings it back', async () => {
+    await js(`gh.click('Hide Counter-Strike 2'); await gh.waitFor(() => gh.button('Show Counter-Strike 2'), 'hidden row')`);
+    await js(`gh.click('Close admin panel'); await gh.waitFor(() => gh.titles().length === 11, 'library without it')`);
+    expect(!(await js<string[]>('return gh.titles()')).includes('Counter-Strike 2'), 'a hidden game is still on the shelf');
+    await unlockAdmin();
+    await js(`gh.click('Show Counter-Strike 2'); await gh.waitFor(() => gh.button('Hide Counter-Strike 2'), 'shown again');
+      gh.click('Close admin panel'); await gh.waitFor(() => gh.titles().length === 12, 'restored library')`);
+  });
+
+  await check('staff can change the order players see', async () => {
+    const before = await js<string[]>('return gh.titles()');
+    await unlockAdmin();
+    await js(`gh.click('Move ${'VALORANT'} up'); await gh.sleep(200); gh.click('Close admin panel'); await gh.sleep(300)`);
+    const after = await js<string[]>('return gh.titles()');
+    expect(after[0] === 'VALORANT' && before[0] !== 'VALORANT', `order went ${JSON.stringify(before.slice(0, 2))} → ${JSON.stringify(after.slice(0, 2))}`);
+    return `${String(before[0])} → ${String(after[0])}`;
+  });
+
   for (const [width, height] of [[1280, 720], [1024, 640]] as const) {
     await check(`layout fits ${width}×${height} without horizontal scrolling`, async () => {
       const actual = await viewport(width, height);

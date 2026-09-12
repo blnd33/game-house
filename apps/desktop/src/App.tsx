@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AdminPanel } from './components/AdminPanel.tsx';
 import { Banner } from './components/Banner.tsx';
 import { EndedScreen } from './components/EndedScreen.tsx';
 import { FeaturedGame } from './components/FeaturedGame.tsx';
@@ -19,10 +20,10 @@ const FILTERS: readonly [LibraryFilter, string][] = [['all', 'All'], ['multiplay
 const SECTION_TITLE: Readonly<Record<LibraryView, string>> = { library: 'Installed games', favorites: 'Favorite games', recent: 'Played on this PC' };
 
 export function App({ station }: { station: ConnectedStation }) {
-  const { client, dev, host } = station;
+  const { client, dev, host, admin } = station;
   const sample = dev !== null;
   const { state, stamps } = useStation(client);
-  const games = useCatalog(client);
+  const { games, reload: reloadCatalog } = useCatalog(client);
   const now = useNow(isLive(state));
   const display = state ? deriveDisplay(state, stamps, now) : null;
 
@@ -37,6 +38,7 @@ export function App({ station }: { station: ConnectedStation }) {
   const [dismissedFailure, setDismissedFailure] = useState<string | null>(null);
   const [playError, setPlayError] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => saveFavorites(storage, favorites), [favorites]);
@@ -102,8 +104,9 @@ export function App({ station }: { station: ConnectedStation }) {
 
   return (
     <>
-      <div className="app" inert={ended || launchGame !== null}>
+      <div className="app" inert={ended || launchGame !== null || adminOpen}>
         <Sidebar view={view} category={category} categories={categories} favoriteCount={favorites.size}
+          onAdmin={admin ? () => setAdminOpen(true) : undefined}
           onView={chooseView} onCategory={chooseCategory}>
           <SessionCard display={display} help={state.help} sample={sample} onRequestHelp={() => { void client.requestHelp(); }} />
         </Sidebar>
@@ -143,6 +146,10 @@ export function App({ station }: { station: ConnectedStation }) {
         <LaunchOverlay game={launchGame} phase={launch.phase} sample={sample} onHide={() => setLaunchHidden(true)} />
       )}
       {ended && <EndedScreen display={display} stationLabel={state.station_label} sample={sample} />}
+      {adminOpen && admin && (
+        <AdminPanel admin={admin} stationLabel={state.station_label} sessionActive={display.session !== null}
+          onClose={() => { setAdminOpen(false); reloadCatalog(); }} />
+      )}
       {dev && <dev.Toggle open={devOpen} onToggle={() => setDevOpen(open => !open)} />}
       {dev && devOpen && <dev.Panel controls={dev.controls} state={state} nativeLaunch={station.launchMode === 'native'} onClose={() => setDevOpen(false)} />}
     </>

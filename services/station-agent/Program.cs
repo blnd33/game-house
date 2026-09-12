@@ -35,6 +35,7 @@ return cli.Positionals.FirstOrDefault() switch
     "maintenance-enter" => MaintenanceStatus(cli.ConfigDirectory, true),
     "maintenance-exit" => LeaveMaintenance(cli.ConfigDirectory),
     "setup" => SetupCommands.Run(cli),
+    "admin" => GamingHouse.Agent.Admin.AdminCli.Run(cli),
     _ => Usage(),
 };
 
@@ -57,7 +58,8 @@ static int LeaveMaintenance(string directory)
 
 static int Usage()
 {
-    Console.Error.WriteLine("GamingHouse.Agent run [--config-dir <folder>] [--pipe <name>] [--dev] | setup ... | --self-check");
+    Console.Error.WriteLine("GamingHouse.Agent run [--config-dir <folder>] [--pipe <name>] [--dev] | setup ... | admin ... | --self-check");
     Console.Error.WriteLine(SetupCommands.Usage);
+    Console.Error.WriteLine(GamingHouse.Agent.Admin.AdminCli.Usage);
     return 2;
 }

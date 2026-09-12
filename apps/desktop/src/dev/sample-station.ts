@@ -63,12 +63,13 @@ const uuid = () => globalThis.crypto.randomUUID();
 
 export function createSampleStation(options: {
   clock?: SampleClock; timing?: Partial<typeof SAMPLE_TIMING>; stationLabel?: string;
-  catalog?: readonly LibraryGame[]; launcher?: Pick<NativeLauncher, 'launch' | 'onEvent'>;
+  catalog?: readonly LibraryGame[] | (() => readonly LibraryGame[]); launcher?: Pick<NativeLauncher, 'launch' | 'onEvent'>;
 } = {}): { client: StationClient; controls: SampleControls } {
   const clock = options.clock ?? systemClock;
   const t = { ...SAMPLE_TIMING, ...options.timing };
   const label = options.stationLabel ?? 'PC-01';
-  const catalog = options.catalog ?? SAMPLE_CATALOG;
+  const catalogSource = options.catalog ?? SAMPLE_CATALOG;
+  const catalogOf: () => readonly LibraryGame[] = typeof catalogSource === 'function' ? catalogSource : () => catalogSource;
   const launcher = options.launcher ?? null;
   const listeners = new Set<(state: StationState) => void>();
   const timers = new Set<unknown>();
@@ -208,14 +209,14 @@ export function createSampleStation(options: {
   });
 
   const client: StationClient = {
-    catalog: async () => catalog,
+    catalog: async () => catalogOf(),
     subscribe(listener) {
       listeners.add(listener);
       if (current) listener(current);
       return () => { listeners.delete(listener); };
     },
     async play(gameId) {
-      if (!catalog.some(game => game.game_id === gameId)) throw new Error('GAME_NOT_ALLOWED');
+      if (!catalogOf().some(game => game.game_id === gameId)) throw new Error('GAME_NOT_ALLOWED');
       if (launch.phase === 'requesting' || launch.phase === 'starting') return; // same logical request
       if (connection !== 'connected') {
         launch = { phase: 'failed', game_id: gameId, reason: 'communication_lost' };

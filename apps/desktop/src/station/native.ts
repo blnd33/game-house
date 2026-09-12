@@ -22,4 +22,8 @@ export interface NativeLauncher {
   catalog(): Promise<readonly LibraryGame[]>;
   launch(gameId: string): Promise<NativeLaunchResult>;
   onEvent(listener: (event: NativeEvent) => void): () => void;
+  /** Admin panel messages, forwarded to the agent which checks the staff password. */
+  admin(message: Record<string, unknown>): Promise<Record<string, unknown>>;
+  /** Windows file picker for choosing a game program. */
+  pickGameFile(): Promise<string | null>;
 }
