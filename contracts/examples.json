@@ -1,0 +1,385 @@
+{
+  "enrollment": {
+    "schema": "EnrollRequest",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "sent_at": "2026-09-11T12:00:00Z",
+      "pairing_code": "EXAMPLE-ONLY-NOT-A-REAL-CODE",
+      "installation_id": "40000000-0000-4000-8000-000000000001",
+      "agent_version": "0.1.0",
+      "station_label": "PC-01"
+    }
+  },
+  "authorizationGranted": {
+    "schema": "SnapshotResponse",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "server_time": "2026-09-11T12:00:00Z",
+      "snapshot": {
+        "revision": 1,
+        "station_epoch": 1,
+        "authorization": {
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "expires_at": "2026-09-11T12:02:00Z",
+          "opaque_ticket_reference": "development-ticket"
+        },
+        "session": null,
+        "restriction": {
+          "state": "unrestricted",
+          "command_id": null,
+          "verified_at": "2026-09-11T12:00:00Z",
+          "failure_code": null
+        },
+        "authorized_play_until": null,
+        "reassignable": false
+      }
+    }
+  },
+  "launchRequested": {
+    "schema": "LaunchRequest",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "sent_at": "2026-09-11T12:00:00Z",
+      "session_id": null,
+      "authorization_id": "30000000-0000-4000-8000-000000000001",
+      "station_epoch": 1,
+      "game_id": "sample-steam-game",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "expected_snapshot_revision": 1
+    }
+  },
+  "launchPermitted": {
+    "schema": "LaunchResponse",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "server_time": "2026-09-11T12:00:00Z",
+      "snapshot": {
+        "revision": 2,
+        "station_epoch": 1,
+        "authorization": {
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "expires_at": "2026-09-11T12:02:00Z",
+          "opaque_ticket_reference": "development-ticket"
+        },
+        "session": {
+          "session_id": "20000000-0000-4000-8000-000000000001",
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "revision": 1,
+          "state": "pending",
+          "policy_version": "dev-policy-20s-v1",
+          "accepted_first_play_at": "2026-09-11T12:00:00Z",
+          "grace_deadline_at": "2026-09-11T12:00:20Z",
+          "pending_expires_at": "2026-09-11T12:02:00Z",
+          "billable_start_at": null,
+          "ended_at": null,
+          "billable_seconds_at_server_time": null,
+          "display_amount": null
+        },
+        "restriction": {
+          "state": "unrestricted",
+          "command_id": null,
+          "verified_at": "2026-09-11T12:00:00Z",
+          "failure_code": null
+        },
+        "authorized_play_until": "2026-09-11T12:01:00Z",
+        "reassignable": false
+      },
+      "attempt": {
+        "attempt_id": "50000000-0000-4000-8000-000000000001",
+        "session_id": "20000000-0000-4000-8000-000000000001",
+        "game_id": "sample-steam-game",
+        "station_epoch": 1,
+        "issued_at": "2026-09-11T12:00:00Z",
+        "expires_at": "2026-09-11T12:01:00Z",
+        "state": "permitted"
+      }
+    }
+  },
+  "gameRunning": {
+    "schema": "GameRunningEvent",
+    "value": {
+      "api_version": "1",
+      "event_id": "90000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "session_id": "20000000-0000-4000-8000-000000000001",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "sequence": 1,
+      "observed_at": "2026-09-11T12:00:08Z",
+      "monotonic_elapsed_ms": 8000,
+      "type": "game_running",
+      "attempt_id": "50000000-0000-4000-8000-000000000001",
+      "game_run_id": "60000000-0000-4000-8000-000000000001",
+      "game_id": "sample-steam-game",
+      "process_started_at": "2026-09-11T12:00:08Z",
+      "detection_profile_version": "dev-profile-1"
+    }
+  },
+  "launchFailed": {
+    "schema": "LaunchFailedEvent",
+    "value": {
+      "api_version": "1",
+      "event_id": "90000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "session_id": "20000000-0000-4000-8000-000000000001",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "sequence": 1,
+      "observed_at": "2026-09-11T12:00:08Z",
+      "monotonic_elapsed_ms": 8000,
+      "type": "launch_failed",
+      "attempt_id": "50000000-0000-4000-8000-000000000001",
+      "game_id": "sample-steam-game",
+      "reason": "login_required",
+      "diagnostic": "Expected game process was not detected."
+    }
+  },
+  "gameExited": {
+    "schema": "GameExitedEvent",
+    "value": {
+      "api_version": "1",
+      "event_id": "90000000-0000-4000-8000-000000000002",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "session_id": "20000000-0000-4000-8000-000000000001",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "sequence": 2,
+      "observed_at": "2026-09-11T12:00:40Z",
+      "monotonic_elapsed_ms": 40000,
+      "type": "game_exited",
+      "attempt_id": "50000000-0000-4000-8000-000000000001",
+      "game_run_id": "60000000-0000-4000-8000-000000000001",
+      "game_id": "sample-steam-game",
+      "exit_code": 0
+    }
+  },
+  "stationUseObserved": {
+    "schema": "ObservedUseEvent",
+    "value": {
+      "api_version": "1",
+      "event_id": "90000000-0000-4000-8000-000000000003",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "session_id": "20000000-0000-4000-8000-000000000001",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "sequence": 3,
+      "observed_at": "2026-09-11T12:01:00Z",
+      "monotonic_elapsed_ms": 60000,
+      "type": "station_use_observed",
+      "segment_id": "a0000000-0000-4000-8000-000000000001",
+      "segment_started_at": "2026-09-11T12:00:00Z",
+      "observed_station_use_seconds": 60,
+      "coverage": "continuous"
+    }
+  },
+  "sessionActive": {
+    "schema": "SnapshotResponse",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "server_time": "2026-09-11T12:01:00Z",
+      "snapshot": {
+        "revision": 3,
+        "station_epoch": 1,
+        "authorization": {
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "expires_at": "2026-09-11T12:02:00Z",
+          "opaque_ticket_reference": "development-ticket"
+        },
+        "session": {
+          "session_id": "20000000-0000-4000-8000-000000000001",
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "revision": 2,
+          "state": "active",
+          "policy_version": "dev-policy-20s-v1",
+          "accepted_first_play_at": "2026-09-11T12:00:00Z",
+          "grace_deadline_at": "2026-09-11T12:00:20Z",
+          "pending_expires_at": "2026-09-11T12:02:00Z",
+          "billable_start_at": "2026-09-11T12:00:20Z",
+          "ended_at": null,
+          "billable_seconds_at_server_time": 40,
+          "display_amount": null
+        },
+        "restriction": {
+          "state": "unrestricted",
+          "command_id": null,
+          "verified_at": "2026-09-11T12:00:00Z",
+          "failure_code": null
+        },
+        "authorized_play_until": "2026-09-11T12:01:30Z",
+        "reassignable": false
+      }
+    }
+  },
+  "cashierSessionEnded": {
+    "schema": "SnapshotResponse",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "server_time": "2026-09-11T12:01:00Z",
+      "snapshot": {
+        "revision": 4,
+        "station_epoch": 1,
+        "authorization": null,
+        "session": {
+          "session_id": "20000000-0000-4000-8000-000000000001",
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "revision": 3,
+          "state": "ended",
+          "policy_version": "dev-policy-20s-v1",
+          "accepted_first_play_at": "2026-09-11T12:00:00Z",
+          "grace_deadline_at": "2026-09-11T12:00:20Z",
+          "pending_expires_at": "2026-09-11T12:02:00Z",
+          "billable_start_at": "2026-09-11T12:00:20Z",
+          "ended_at": "2026-09-11T12:01:00Z",
+          "billable_seconds_at_server_time": 40,
+          "display_amount": {
+            "currency": "IQD",
+            "decimal_amount": "1000",
+            "display_text": "1,000 IQD",
+            "is_final": true
+          }
+        },
+        "restriction": {
+          "state": "pending",
+          "command_id": "70000000-0000-4000-8000-000000000001",
+          "verified_at": null,
+          "failure_code": null
+        },
+        "authorized_play_until": null,
+        "reassignable": false
+      }
+    }
+  },
+  "restrictCommand": {
+    "schema": "RestrictCommand",
+    "value": {
+      "api_version": "1",
+      "command_id": "70000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "session_id": "20000000-0000-4000-8000-000000000001",
+      "station_epoch": 1,
+      "session_revision": 3,
+      "type": "restrict_station",
+      "issued_at": "2026-09-11T12:01:00Z",
+      "expires_at": "2026-09-11T12:02:00Z",
+      "restriction_profile_id": "pending-target-validation",
+      "reason": "cashier_session_ended"
+    }
+  },
+  "restrictionAcknowledged": {
+    "schema": "CommandResultRequest",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "sent_at": "2026-09-11T12:01:02Z",
+      "session_id": "20000000-0000-4000-8000-000000000001",
+      "station_epoch": 1,
+      "command_id": "70000000-0000-4000-8000-000000000001",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "result_id": "b0000000-0000-4000-8000-000000000001",
+      "attempted_at": "2026-09-11T12:01:01Z",
+      "outcome": "verified",
+      "restriction_state": "restricted",
+      "verified_at": "2026-09-11T12:01:02Z",
+      "evidence": "Fictional example only; target restriction is not yet implemented.",
+      "failure_code": null
+    }
+  },
+  "heartbeat": {
+    "schema": "HeartbeatRequest",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "sent_at": "2026-09-11T12:00:00Z",
+      "boot_id": "40000000-0000-4000-8000-000000000001",
+      "sequence": 1,
+      "monotonic_elapsed_ms": 0,
+      "session_id": null,
+      "last_snapshot_revision": 1,
+      "restriction": {
+        "state": "unrestricted",
+        "command_id": null,
+        "verified_at": "2026-09-11T12:00:00Z",
+        "failure_code": null
+      },
+      "running_games": [],
+      "outbox_depth": 0
+    }
+  },
+  "eventBatch": {
+    "schema": "EventsRequest",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "sent_at": "2026-09-11T12:00:00Z",
+      "events": [
+        {
+          "api_version": "1",
+          "event_id": "90000000-0000-4000-8000-000000000001",
+          "station_id": "10000000-0000-4000-8000-000000000001",
+          "session_id": "20000000-0000-4000-8000-000000000001",
+          "boot_id": "40000000-0000-4000-8000-000000000001",
+          "sequence": 1,
+          "observed_at": "2026-09-11T12:00:08Z",
+          "monotonic_elapsed_ms": 8000,
+          "type": "game_running",
+          "attempt_id": "50000000-0000-4000-8000-000000000001",
+          "game_run_id": "60000000-0000-4000-8000-000000000001",
+          "game_id": "sample-steam-game",
+          "process_started_at": "2026-09-11T12:00:08Z",
+          "detection_profile_version": "dev-profile-1"
+        }
+      ]
+    }
+  },
+  "eventAcknowledged": {
+    "schema": "EventsResponse",
+    "value": {
+      "api_version": "1",
+      "request_id": "80000000-0000-4000-8000-000000000001",
+      "station_id": "10000000-0000-4000-8000-000000000001",
+      "server_time": "2026-09-11T12:00:00Z",
+      "results": [
+        {
+          "event_id": "90000000-0000-4000-8000-000000000001",
+          "outcome": "accepted",
+          "code": null
+        }
+      ],
+      "snapshot": {
+        "revision": 1,
+        "station_epoch": 1,
+        "authorization": {
+          "authorization_id": "30000000-0000-4000-8000-000000000001",
+          "station_epoch": 1,
+          "expires_at": "2026-09-11T12:02:00Z",
+          "opaque_ticket_reference": "development-ticket"
+        },
+        "session": null,
+        "restriction": {
+          "state": "unrestricted",
+          "command_id": null,
+          "verified_at": "2026-09-11T12:00:00Z",
+          "failure_code": null
+        },
+        "authorized_play_until": null,
+        "reassignable": false
+      }
+    }
+  }
+}

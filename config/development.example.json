@@ -1,0 +1,9 @@
+{
+  "mode": "development",
+  "api_base_url": "http://127.0.0.1:4317/gaming/v1",
+  "station_label": "PC-01",
+  "planned_station_count": 12,
+  "business_timezone": "Asia/Baghdad",
+  "credential_reference": null,
+  "catalog": []
+}

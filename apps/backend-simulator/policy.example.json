@@ -1,0 +1,8 @@
+{
+  "billing_start_delay_seconds": 20,
+  "hourly_rate_decimal": "6000.00",
+  "currency": "IQD",
+  "billing_unit_seconds": 60,
+  "rounding_mode": "up",
+  "minimum_charge_decimal": "0.00"
+}

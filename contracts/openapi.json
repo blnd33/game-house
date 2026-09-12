@@ -1,0 +1,3730 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Gaming House Station API — PROPOSAL",
+    "version": "0.1.0",
+    "description": "Phase 1 proposal for partner review. No production endpoints are asserted to exist. Station scope only; no cashier powers. Canonical API version 1.",
+    "contact": {
+      "name": "Gaming House / Padel House integration owners"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4317/gaming/v1",
+      "description": "Development simulator address reserved for Phase 4; not running in Phase 1. Real adapter requires configured HTTPS."
+    }
+  ],
+  "security": [
+    {
+      "stationBearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Enrollment",
+      "description": "Protected device setup and credential lifecycle."
+    },
+    {
+      "name": "Station",
+      "description": "Device-scoped operations; never cashier or pricing authority."
+    }
+  ],
+  "paths": {
+    "/devices/enroll": {
+      "post": {
+        "operationId": "enrollDevice",
+        "summary": "Redeem a one-time partner-issued station pairing code",
+        "tags": [
+          "Enrollment"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/credentials/renew": {
+      "post": {
+        "operationId": "renewCredentials",
+        "summary": "Rotate credentials using a station-scoped renewal secret",
+        "tags": [
+          "Enrollment"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/credentials/revoke": {
+      "post": {
+        "operationId": "revokeOwnCredentials",
+        "summary": "Revoke this station credential family only",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/configuration": {
+      "get": {
+        "operationId": "getConfiguration",
+        "summary": "Read station configuration without billing controls",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": true,
+            "description": "Correlation UUID for reads. Responses echo this value.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/snapshot": {
+      "get": {
+        "operationId": "getStationSnapshot",
+        "summary": "Read authorization and authoritative station/session state",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": true,
+            "description": "Correlation UUID for reads. Responses echo this value.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/sessions/{session_id}": {
+      "get": {
+        "operationId": "getSessionSnapshot",
+        "summary": "Read a station-owned session snapshot",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": true,
+            "description": "Correlation UUID for reads. Responses echo this value.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "description": "Must belong to the authenticated station; never grants cross-station reads.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/heartbeat": {
+      "post": {
+        "operationId": "sendHeartbeat",
+        "summary": "Report liveness and currently observed game processes",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeartbeatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/launches": {
+      "post": {
+        "operationId": "requestLaunch",
+        "summary": "Obtain an expiring launch permit under cashier authorization",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/launches/cancel": {
+      "post": {
+        "operationId": "cancelLaunchAttempt",
+        "summary": "Cancel a launch attempt without ending billing or resetting grace",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelLaunchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/events": {
+      "post": {
+        "operationId": "submitEvents",
+        "summary": "Submit durable observations without client-calculated charges",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/commands": {
+      "get": {
+        "operationId": "pollCommands",
+        "summary": "Poll expiring station-scoped restriction commands",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": true,
+            "description": "Correlation UUID for reads. Responses echo this value.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque previous cursor; commands remain eligible until terminal acknowledgement or expiry.",
+            "schema": {
+              "type": "string",
+              "description": "Opaque cursor."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stations/{station_id}/commands/results": {
+      "post": {
+        "operationId": "acknowledgeCommand",
+        "summary": "Report verified restriction or honest enforcement failure",
+        "tags": [
+          "Station"
+        ],
+        "description": "PROPOSED, not an existing Padel House route. See docs/partner-handoff.md for transactional, timing, and retry semantics.",
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "description": "Must equal the authenticated station ID and any station ID in the body.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Stable UUID for one logical mutation; same key + different canonical payload returns 409. Reuse identical body on retry.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommandResultRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted response. A launch permit is not proof that a game is running or billing has started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResultResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credential, renewal token, or pairing code invalid/expired/revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Station scope or authorization rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Session, revision, sequence, or idempotency conflict; reconcile before a new action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired authorization, attempt, or command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Back off using Retry-After.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient failure; retry with stable identifiers and backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "stationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Per-station revocable opaque bearer token over HTTPS; never a staff cookie. Enrollment uses a one-time code; renewal uses its dedicated scoped secret."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "INVALID_REQUEST",
+              "UNAUTHENTICATED",
+              "CREDENTIAL_REVOKED",
+              "FORBIDDEN_STATION",
+              "PAIRING_EXPIRED",
+              "AUTHORIZATION_REQUIRED",
+              "AUTHORIZATION_EXPIRED",
+              "STATION_UNAVAILABLE",
+              "SESSION_MISMATCH",
+              "REVISION_CONFLICT",
+              "IDEMPOTENCY_CONFLICT",
+              "ATTEMPT_EXPIRED",
+              "ATTEMPT_CANCELLED",
+              "GAME_NOT_ALLOWED",
+              "STALE_EVENT",
+              "SEQUENCE_CONFLICT",
+              "COMMAND_EXPIRED",
+              "UNSUPPORTED_COMMAND",
+              "RATE_LIMITED",
+              "TEMPORARILY_UNAVAILABLE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Safe diagnostic without secrets or customer credentials.",
+            "maxLength": 512
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "session_id",
+          "server_time",
+          "code",
+          "message",
+          "retryable",
+          "retry_after_seconds"
+        ]
+      },
+      "EnrollRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "pairing_code": {
+            "type": "string",
+            "description": "One-use code entered through protected setup.",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "installation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agent_version": {
+            "type": "string",
+            "description": "Installed application version."
+          },
+          "station_label": {
+            "type": "string",
+            "description": "Requested label, backend assigns identity.",
+            "pattern": "^PC-[0-9]{2,4}$"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "sent_at",
+          "pairing_code",
+          "installation_id",
+          "agent_version",
+          "station_label"
+        ]
+      },
+      "Credentials": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "credential_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "access_token": {
+            "type": "string",
+            "description": "Opaque secret. Never log or expose to the renderer.",
+            "minLength": 32,
+            "maxLength": 4096
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "renewal_token": {
+            "type": "string",
+            "description": "Opaque secret. Never log or expose to the renderer.",
+            "minLength": 32,
+            "maxLength": 4096
+          },
+          "renewal_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          }
+        },
+        "required": [
+          "credential_id",
+          "access_token",
+          "expires_at",
+          "renewal_token",
+          "renewal_expires_at"
+        ]
+      },
+      "EnrollResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "station_label": {
+            "type": "string",
+            "description": "Backend-approved station label."
+          },
+          "credentials": {
+            "$ref": "#/components/schemas/Credentials"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "station_label",
+          "credentials"
+        ]
+      },
+      "RenewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "credential_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "renewal_token": {
+            "type": "string",
+            "description": "Opaque secret. Never log or expose to the renderer.",
+            "minLength": 32,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "credential_id",
+          "renewal_token"
+        ]
+      },
+      "RenewResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "credentials": {
+            "$ref": "#/components/schemas/Credentials"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "credentials"
+        ]
+      },
+      "RevokeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "credential_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "credential_id"
+        ]
+      },
+      "RevokeResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "revoked": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "revoked"
+        ]
+      },
+      "Authorization": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "authorization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "opaque_ticket_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Non-sensitive opaque ticket reference. No staff or customer credentials."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "authorization_id",
+          "station_epoch",
+          "expires_at",
+          "opaque_ticket_reference"
+        ]
+      },
+      "Amount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency.",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "decimal_amount": {
+            "type": "string",
+            "description": "Backend-calculated decimal string; do not recalculate.",
+            "pattern": "^\\d+(\\.\\d+)?$"
+          },
+          "display_text": {
+            "type": "string",
+            "description": "Formatted by backend for display."
+          },
+          "is_final": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "currency",
+          "decimal_amount",
+          "display_text",
+          "is_final"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "ended",
+              "cancelled"
+            ]
+          },
+          "policy_version": {
+            "type": "string",
+            "description": "Immutable policy snapshot reference. Raw rate and delay settings are not device controls."
+          },
+          "accepted_first_play_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "grace_deadline_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "pending_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "billable_start_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$",
+                "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$",
+                "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "billable_seconds_at_server_time": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Amount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "authorization_id",
+          "station_epoch",
+          "revision",
+          "state",
+          "policy_version",
+          "accepted_first_play_at",
+          "grace_deadline_at",
+          "pending_expires_at",
+          "billable_start_at",
+          "ended_at",
+          "billable_seconds_at_server_time",
+          "display_amount"
+        ]
+      },
+      "Restriction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "unrestricted",
+              "pending",
+              "restricted",
+              "failed"
+            ]
+          },
+          "command_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$",
+                "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Safe operator diagnostic."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state",
+          "command_id",
+          "verified_at",
+          "failure_code"
+        ]
+      },
+      "Snapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "authorization": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Authorization"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "session": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Session"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "restriction": {
+            "$ref": "#/components/schemas/Restriction"
+          },
+          "authorized_play_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$",
+                "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reassignable": {
+            "type": "boolean",
+            "description": "Backend decision; ended billing alone does not make a station available."
+          }
+        },
+        "required": [
+          "revision",
+          "station_epoch",
+          "authorization",
+          "session",
+          "restriction",
+          "authorized_play_until",
+          "reassignable"
+        ]
+      },
+      "ProcessProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "executable_names": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Exact expected process executable basename.",
+              "pattern": "^[^\\\\/:*?\"<>|]+\\.exe$"
+            },
+            "maxItems": 20
+          },
+          "expected_install_root": {
+            "type": "string",
+            "description": "Protected absolute local root; resolve canonical path and prohibit player-writable launch targets."
+          },
+          "launch_timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "handoff_strategy": {
+            "type": "string",
+            "enum": [
+              "direct_process",
+              "steam_process"
+            ]
+          }
+        },
+        "required": [
+          "executable_names",
+          "expected_install_root",
+          "launch_timeout_seconds",
+          "handoff_strategy"
+        ]
+      },
+      "SteamLaunch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "steam",
+            "type": "string"
+          },
+          "app_id": {
+            "type": "string",
+            "description": "Digits only; construct supported Steam URI locally.",
+            "pattern": "^[1-9][0-9]{0,9}$"
+          }
+        },
+        "required": [
+          "type",
+          "app_id"
+        ]
+      },
+      "ExecutableLaunch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "executable",
+            "type": "string"
+          },
+          "executable_path": {
+            "type": "string",
+            "description": "Admin-approved absolute Windows executable path. Never a command line or URL."
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Individual argument; never concatenate through a shell."
+            },
+            "maxItems": 32
+          },
+          "working_directory": {
+            "type": "string",
+            "description": "Validated absolute Windows directory."
+          }
+        },
+        "required": [
+          "type",
+          "executable_path",
+          "arguments",
+          "working_directory"
+        ]
+      },
+      "GameProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display title."
+          },
+          "artwork_asset": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Approved local asset ID; never load arbitrary remote content."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "type": "string",
+            "description": "Category name."
+          },
+          "controller": {
+            "type": "boolean"
+          },
+          "multiplayer": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "installed": {
+            "type": "boolean",
+            "description": "Locally verified per station; central claims do not prove installation."
+          },
+          "launch": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SteamLaunch"
+              },
+              {
+                "$ref": "#/components/schemas/ExecutableLaunch"
+              }
+            ]
+          },
+          "detection": {
+            "$ref": "#/components/schemas/ProcessProfile"
+          }
+        },
+        "required": [
+          "game_id",
+          "title",
+          "artwork_asset",
+          "category",
+          "controller",
+          "multiplayer",
+          "enabled",
+          "installed",
+          "launch",
+          "detection"
+        ]
+      },
+      "StationConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "config_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "station_label": {
+            "type": "string",
+            "description": "PC label."
+          },
+          "planned_station_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "business_timezone": {
+            "type": "string",
+            "const": "Asia/Baghdad"
+          },
+          "heartbeat_interval_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "command_poll_interval_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observation_freshness_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "pending_launch_offline_timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "restriction_profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Locally supported, operator-approved profile. No remote code or commands."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "catalog_revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Optional central metadata revision."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "config_version",
+          "station_label",
+          "planned_station_count",
+          "business_timezone",
+          "heartbeat_interval_seconds",
+          "command_poll_interval_seconds",
+          "observation_freshness_seconds",
+          "pending_launch_offline_timeout_seconds",
+          "restriction_profile_id",
+          "catalog_revision"
+        ]
+      },
+      "ConfigResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "config": {
+            "$ref": "#/components/schemas/StationConfig"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "config"
+        ]
+      },
+      "SnapshotResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "snapshot"
+        ]
+      },
+      "RunningObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "process_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          }
+        },
+        "required": [
+          "session_id",
+          "attempt_id",
+          "game_run_id",
+          "game_id",
+          "process_started_at"
+        ]
+      },
+      "HeartbeatRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "monotonic_elapsed_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_snapshot_revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "restriction": {
+            "$ref": "#/components/schemas/Restriction"
+          },
+          "running_games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunningObservation"
+            },
+            "maxItems": 16
+          },
+          "outbox_depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "boot_id",
+          "sequence",
+          "monotonic_elapsed_ms",
+          "session_id",
+          "last_snapshot_revision",
+          "restriction",
+          "running_games",
+          "outbox_depth"
+        ]
+      },
+      "LaunchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authorization_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expected_snapshot_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "session_id",
+          "authorization_id",
+          "station_epoch",
+          "game_id",
+          "boot_id",
+          "expected_snapshot_revision"
+        ]
+      },
+      "LaunchAttempt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "permitted",
+              "running",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          }
+        },
+        "required": [
+          "attempt_id",
+          "session_id",
+          "game_id",
+          "station_epoch",
+          "issued_at",
+          "expires_at",
+          "state"
+        ]
+      },
+      "LaunchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          },
+          "attempt": {
+            "$ref": "#/components/schemas/LaunchAttempt"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "snapshot",
+          "attempt"
+        ]
+      },
+      "CancelLaunchRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "player_cancelled",
+              "launch_timeout",
+              "agent_recovery",
+              "communication_lost"
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "session_id",
+          "attempt_id",
+          "reason"
+        ]
+      },
+      "GameRunningEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "monotonic_elapsed_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "const": "game_running"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "process_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "detection_profile_version": {
+            "type": "string",
+            "description": "Protected local profile revision."
+          }
+        },
+        "required": [
+          "api_version",
+          "event_id",
+          "station_id",
+          "session_id",
+          "boot_id",
+          "sequence",
+          "observed_at",
+          "monotonic_elapsed_ms",
+          "type",
+          "attempt_id",
+          "game_run_id",
+          "game_id",
+          "process_started_at",
+          "detection_profile_version"
+        ]
+      },
+      "LaunchFailedEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "monotonic_elapsed_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "const": "launch_failed"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "timeout",
+              "not_installed",
+              "login_required",
+              "process_unreliable",
+              "start_failed",
+              "communication_lost"
+            ]
+          },
+          "diagnostic": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Safe diagnostic without tokens, account names, or credentials.",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "event_id",
+          "station_id",
+          "session_id",
+          "boot_id",
+          "sequence",
+          "observed_at",
+          "monotonic_elapsed_ms",
+          "type",
+          "attempt_id",
+          "game_id",
+          "reason",
+          "diagnostic"
+        ]
+      },
+      "GameExitedEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "monotonic_elapsed_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "const": "game_exited"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "game_id": {
+            "type": "string",
+            "description": "Stable ID resolved through the protected station catalog.",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "event_id",
+          "station_id",
+          "session_id",
+          "boot_id",
+          "sequence",
+          "observed_at",
+          "monotonic_elapsed_ms",
+          "type",
+          "attempt_id",
+          "game_run_id",
+          "game_id",
+          "exit_code"
+        ]
+      },
+      "ObservedUseEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "monotonic_elapsed_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "const": "station_use_observed"
+          },
+          "segment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "segment_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "observed_station_use_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "coverage": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "recovered_unverified"
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "event_id",
+          "station_id",
+          "session_id",
+          "boot_id",
+          "sequence",
+          "observed_at",
+          "monotonic_elapsed_ms",
+          "type",
+          "segment_id",
+          "segment_started_at",
+          "observed_station_use_seconds",
+          "coverage"
+        ]
+      },
+      "StationEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GameRunningEvent"
+          },
+          {
+            "$ref": "#/components/schemas/LaunchFailedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/GameExitedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ObservedUseEvent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "game_running": "#/components/schemas/GameRunningEvent",
+            "launch_failed": "#/components/schemas/LaunchFailedEvent",
+            "game_exited": "#/components/schemas/GameExitedEvent",
+            "station_use_observed": "#/components/schemas/ObservedUseEvent"
+          }
+        }
+      },
+      "EventsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StationEvent"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "events"
+        ]
+      },
+      "EventResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "duplicate",
+              "rejected",
+              "retry"
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "STALE_EVENT",
+                  "SESSION_MISMATCH",
+                  "ATTEMPT_EXPIRED",
+                  "ATTEMPT_CANCELLED",
+                  "SEQUENCE_CONFLICT",
+                  "INVALID_REQUEST",
+                  "TEMPORARILY_UNAVAILABLE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "event_id",
+          "outcome",
+          "code"
+        ]
+      },
+      "EventsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventResult"
+            },
+            "maxItems": 100
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "results",
+          "snapshot"
+        ]
+      },
+      "RestrictCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "session_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "const": "restrict_station"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "restriction_profile_id": {
+            "type": "string",
+            "description": "Must match locally approved and implemented profile."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "cashier_session_ended",
+              "authorization_expired"
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "command_id",
+          "station_id",
+          "session_id",
+          "station_epoch",
+          "session_revision",
+          "type",
+          "issued_at",
+          "expires_at",
+          "restriction_profile_id",
+          "reason"
+        ]
+      },
+      "CommandsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestrictCommand"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Opaque cursor. Polling is at-least-once, not an acknowledgement."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "commands",
+          "next_cursor",
+          "snapshot"
+        ]
+      },
+      "CommandResultRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_epoch": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "boot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "result_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attempted_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "failed",
+              "rejected_stale",
+              "expired",
+              "unsupported"
+            ]
+          },
+          "restriction_state": {
+            "type": "string",
+            "enum": [
+              "restricted",
+              "failed",
+              "unknown"
+            ]
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "Z$",
+                "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Safe verification detail, not an unverified claim.",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Machine-readable local diagnostic.",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "sent_at",
+          "session_id",
+          "station_epoch",
+          "command_id",
+          "boot_id",
+          "result_id",
+          "attempted_at",
+          "outcome",
+          "restriction_state",
+          "verified_at",
+          "evidence",
+          "failure_code"
+        ]
+      },
+      "CommandResultResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "type": "string",
+            "const": "1"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "station_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$",
+            "description": "UTC RFC3339 timestamp ending in Z. Server validates device observations; device wall time is not financial authority."
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "result_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recorded": {
+            "type": "boolean",
+            "const": true
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          }
+        },
+        "required": [
+          "api_version",
+          "request_id",
+          "station_id",
+          "server_time",
+          "command_id",
+          "result_id",
+          "recorded",
+          "snapshot"
+        ]
+      }
+    }
+  }
+}

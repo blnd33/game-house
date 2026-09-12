@@ -1,0 +1,50 @@
+{
+  "name": "gaming-house",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Gaming House Windows station and development backend",
+  "type": "module",
+  "engines": {
+    "node": ">=24.14.1 <25",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "contract:generate": "node scripts/build-contract.mjs && openapi-typescript contracts/openapi.json -o packages/contracts/src/generated.ts",
+    "contract:lint": "redocly lint contracts/openapi.json",
+    "typecheck": "tsc --noEmit && tsc -p apps/desktop/tsconfig.electron.json --noEmit",
+    "build": "npm run typecheck && vite build --config apps/desktop/vite.config.ts && tsc -p apps/desktop/tsconfig.electron.json",
+    "start": "npm run build && electron apps/desktop/dist-electron/main.js",
+    "test": "node --test tests/*.test.mjs tests/*.test.ts",
+    "test:desktop": "npm run build:sample && electron apps/desktop/dist-electron/main.js --ui-test",
+    "preview:ui": "vite preview --config apps/desktop/vite.config.ts --port 4318 --strictPort",
+    "agent:build": "dotnet build services/station-agent/GamingHouse.Agent.csproj",
+    "agent:check": "dotnet run --project services/station-agent/GamingHouse.Agent.csproj -- --self-check",
+    "verify": "npm run contract:lint && npm test && npm run build && npm run agent:build && npm run agent:check && npm run agent:test && npm run test:system && npm run test:native",
+    "build:sample": "npm run typecheck && vite build --config apps/desktop/vite.config.ts --mode sample && tsc -p apps/desktop/tsconfig.electron.json",
+    "start:sample": "npm run build:sample && electron apps/desktop/dist-electron/main.js --sample",
+    "start:native": "npm run agent:build && npm run build && electron apps/desktop/dist-electron/main.js --dev-agent",
+    "agent:test": "dotnet test services/station-agent.Tests/GamingHouse.Agent.Tests.csproj",
+    "simulator": "node apps/backend-simulator/server.mjs",
+    "cashier": "node apps/backend-simulator/cli.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "test:system": "npm run agent:build && node --test tests/system.integration.mjs",
+    "test:native": "npm run build && npm run agent:build && dotnet build tools/test-game/GH.TestGame.csproj && node --test tests/native-launch.integration.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "1.45.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.52.1",
+    "@types/node": "24.13.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "electron": "44.3.0",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.0"
+  }
+}
