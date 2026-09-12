@@ -110,7 +110,8 @@ export function App({ station }: { station: ConnectedStation }) {
         <main className="main">
           <Header title={title} search={search} onSearch={setSearch} inputRef={searchRef}
             stationLabel={state.station_label} connection={state.connection} />
-          <Banner connection={state.connection} failure={failure} playError={playError}
+          <Banner connection={state.connection} hasSession={display.session !== null}
+            unconfigured={state.snapshot === null && state.source === 'native'} failure={failure} playError={playError}
             onDismiss={() => { setDismissedFailure(failureKey); setPlayError(false); }} />
           <div className="scroll">
             {featured && (
@@ -135,7 +136,8 @@ export function App({ station }: { station: ConnectedStation }) {
             )}
           </div>
         </main>
-        <StatusBar connection={state.connection} host={host} sample={sample} developmentBackend={state.backend_mode === 'development'} />
+        <StatusBar connection={state.connection} host={host} sample={sample} developmentBackend={state.backend_mode === 'development'}
+          unconfigured={state.snapshot === null && state.source === 'native'} />
       </div>
       {launchGame && startingId && (launch.phase === 'requesting' || launch.phase === 'starting') && (
         <LaunchOverlay game={launchGame} phase={launch.phase} sample={sample} onHide={() => setLaunchHidden(true)} />

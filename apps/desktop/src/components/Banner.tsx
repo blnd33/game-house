@@ -4,19 +4,31 @@ import { LAUNCH_FAILURE_TEXT } from '../station/display.ts';
 
 interface Props {
   connection: ConnectionState;
+  /** A session exists, so the message must say it keeps running while offline. */
+  hasSession: boolean;
+  /** No backend state has ever arrived: this PC is not set up yet. */
+  unconfigured: boolean;
   failure: { title: string; reason: LaunchFailureReason; billingNotStarted: boolean } | null;
   playError: boolean;
   onDismiss(): void;
 }
 
 /** One exceptional message at a time: connection first, then launch problems. */
-export function Banner({ connection, failure, playError, onDismiss }: Props) {
+export function Banner({ connection, hasSession, unconfigured, failure, playError, onDismiss }: Props) {
   if (connection === 'disconnected' || connection === 'stale') {
     return (
       <div className="banner warn" role="status">
         <WifiOff aria-hidden="true" />
-        <span><strong>{connection === 'stale' ? 'Connection is unstable.' : 'Connection to Padel House lost.'}</strong>{' '}
-          Your session continues. Times may be out of date, and new games can start once the connection is back.</span>
+        <span>
+          {unconfigured
+            ? <><strong>This PC is not set up yet.</strong> It has not been connected to Padel House, so no games are
+              available. Staff need to finish setting it up.</>
+            : hasSession
+              ? <><strong>{connection === 'stale' ? 'Connection is unstable.' : 'Connection to Padel House lost.'}</strong>{' '}
+                Your session continues. Times may be out of date, and new games can start once the connection is back.</>
+              : <><strong>{connection === 'stale' ? 'Connection is unstable.' : 'Not connected to Padel House.'}</strong>{' '}
+                You can browse games. Play works again once the connection is back.</>}
+        </span>
       </div>
     );
   }
