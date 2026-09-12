@@ -11,6 +11,8 @@ const devAgent = !app.isPackaged && process.argv.includes('--dev-agent');
 const sampleMode = !app.isPackaged && (uiTest || process.argv.includes('--sample'));
 const projectRoot = fileURLToPath(new URL('../../../', import.meta.url));
 const entry = fileURLToPath(new URL('../dist/index.html', import.meta.url));
+// The supplied logo, built into a Windows icon by scripts/make-icon.mjs.
+const brandIcon = fileURLToPath(new URL('../dist/brand/gaming-house.ico', import.meta.url));
 const trustedUrl = pathToFileURL(entry).href;
 let window: BrowserWindow | null = null;
 
@@ -24,6 +26,7 @@ function startDevelopmentAgent(): void {
 }
 
 app.enableSandbox();
+app.setAppUserModelId('com.padelhouse.gaminghouse'); // taskbar identity and icon grouping
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { window?.restore(); window?.focus(); });
@@ -37,7 +40,7 @@ else {
     session.defaultSession.setPermissionCheckHandler(() => false);
     window = new BrowserWindow({
       width: 1600, height: 900, minWidth: 1024, minHeight: 640,
-      show: false, backgroundColor: '#080808', title: 'Gaming House',
+      show: false, backgroundColor: '#080808', title: 'Gaming House', icon: brandIcon,
       webPreferences: {
         preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
         contextIsolation: true, sandbox: true, nodeIntegration: false,

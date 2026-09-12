@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promise
 import { createHash } from 'node:crypto';
 import { join, resolve, relative } from 'node:path';
 import { spawn } from 'node:child_process';
+import { rcedit } from 'rcedit';
 
 const root = resolve('.');
 const version = `0.4.0-dev-${new Date().toISOString().replace(/[^0-9]/g, '')}`;
@@ -10,7 +11,18 @@ const run = (cmd, args) => new Promise((resolve, reject) => { const child = spaw
 await mkdir(target, { recursive: true });
 await run('dotnet', ['publish', 'services/station-agent/GamingHouse.Agent.csproj', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-p:RuntimeFrameworkVersion=10.0.12', '-o', join(target, 'agent')]);
 await cp(join(root, 'node_modules/electron/dist'), join(target, 'desktop'), { recursive: true });
-await rename(join(target, 'desktop/electron.exe'), join(target, 'desktop/GamingHouse.exe'));
+const exe = join(target, 'desktop/GamingHouse.exe');
+await rename(join(target, 'desktop/electron.exe'), exe);
+// Give the program the supplied Gaming House logo and its own Windows identity,
+// so the file, taskbar button and any shortcut show our brand, not Electron's.
+await rcedit(exe, {
+  icon: join(root, 'apps/desktop/public/brand/gaming-house.ico'),
+  'version-string': {
+    CompanyName: 'Padel House', ProductName: 'Gaming House', FileDescription: 'Gaming House station',
+    LegalCopyright: 'Padel House', OriginalFilename: 'GamingHouse.exe',
+  },
+  'file-version': '0.4.0.0', 'product-version': '0.4.0.0',
+});
 const app = join(target, 'desktop/resources/app');
 await mkdir(join(app, 'apps/desktop/dist-electron'), { recursive: true });
 await cp(join(root, 'apps/desktop/dist'), join(app, 'apps/desktop/dist'), { recursive: true });
